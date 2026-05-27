@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nautical Compass Error Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #5a9ab8;
+            --primary-dark: #4a8aa8;
+            --bg-dark: #1e1e1e;
+            --bg-card: #2d2d2d;
+            --bg-input: #3a3a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #808080;
+            --accent-blue: #5a9ab8;
+            --border-color: #404040;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Roboto', sans-serif; background: #121212; color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+
+        .app-header {
+            background: var(--primary);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .menu-btn, .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; transition: background 0.2s; }
+        .menu-btn:hover, .back-btn:hover { background: rgba(255,255,255,0.1); }
+        .app-title { font-size: 20px; font-weight: 500; color: white; }
+        .header-right { display: flex; gap: 12px; }
+        .header-icon { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+
+        /* Nav Drawer */
+        .nav-drawer { position: fixed; left: -300px; top: 0; width: 300px; height: 100vh; background: var(--bg-card); z-index: 200; transition: left 0.3s ease; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
+        .nav-drawer.open { left: 0; }
+        .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .nav-overlay.open { opacity: 1; pointer-events: all; }
+        .nav-header { background: var(--primary); padding: 20px; display: flex; align-items: center; gap: 12px; }
+        .nav-header i { font-size: 24px; color: white; }
+        .nav-header span { font-size: 18px; font-weight: 500; color: white; }
+        .nav-section { padding: 8px 0; }
+        .nav-section-title { padding: 12px 20px 8px; font-size: 12px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; }
+        .nav-item { display: flex; align-items: center; padding: 14px 20px; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover { background: rgba(90, 154, 184, 0.1); }
+        .nav-item.active { background: rgba(90, 154, 184, 0.15); border-left-color: var(--primary); }
+        .nav-item i { width: 28px; color: var(--text-secondary); font-size: 16px; }
+        .nav-item span { flex: 1; font-size: 15px; color: var(--text-primary); }
+        .nav-item .chevron { color: var(--text-muted); font-size: 14px; }
+
+        .main-content { max-width: 600px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+
+        .card { background: var(--bg-card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .card-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+        .card-header:hover { background: rgba(255,255,255,0.02); }
+        .card-header.collapsible { border-bottom: 1px solid var(--border-color); }
+        .card-header h3 { font-size: 16px; font-weight: 500; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; }
+        .card-header h3 i { font-size: 14px; transition: transform 0.3s; }
+        .card-header.collapsed h3 i { transform: rotate(-90deg); }
+        .card-body { padding: 8px 20px 16px; }
+        .card-body.collapsed { display: none; }
+
+        .form-group { margin-bottom: 16px; position: relative; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 400; }
+        .form-input, .form-select { width: 100%; background: var(--bg-input); border: none; border-bottom: 2px solid var(--border-color); color: var(--text-primary); padding: 12px 0; font-size: 18px; font-weight: 500; font-family: 'Roboto', sans-serif; outline: none; transition: border-color 0.3s; }
+        .form-input:focus, .form-select:focus { border-bottom-color: var(--accent-blue); }
+        .form-input::placeholder { color: var(--text-muted); font-weight: 400; }
+        .input-with-icon { position: relative; }
+        .input-icon { position: absolute; right: 0; top: 50%; transform: translateY(-50%); color: var(--accent-blue); font-size: 20px; cursor: pointer; padding: 8px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .input-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+        .toggle-label { font-size: 16px; color: var(--text-primary); }
+        .toggle-switch { position: relative; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #555; border-radius: 28px; transition: 0.3s; }
+        .toggle-slider:before { content: ""; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent-blue); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+        /* RESPONSIVE STAR MAP - Fixed */
+        .star-map-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 100%; /* 1:1 aspect ratio, responsive */
+            background: linear-gradient(180deg, #0a1a2e 0%, #1a3a5c 50%, #0d2137 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        #starMap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .star-map-overlay {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        .result-value { font-size: 22px; font-weight: 700; color: var(--text-primary); padding: 8px 0; }
+        .result-value.accent { color: var(--accent-blue); }
+        .result-value.large { font-size: 28px; }
+        .result-sublabel { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .result-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { font-size: 14px; color: var(--text-secondary); }
+        .result-label-main { font-size: 16px; color: var(--text-primary); margin-bottom: 4px; }
+        .direction-badge { display: inline-block; padding: 2px 8px; background: rgba(90, 154, 184, 0.2); color: var(--accent-blue); border-radius: 4px; font-size: 14px; font-weight: 500; margin-left: 8px; }
+
+        .btn-primary { width: 100%; padding: 16px; background: transparent; border: 2px solid var(--accent-blue); color: var(--accent-blue); font-size: 14px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin: 8px 0; font-family: 'Roboto', sans-serif; }
+        .btn-primary:hover { background: var(--accent-blue); color: white; }
+        .btn-primary.filled { background: var(--accent-blue); color: white; }
+        .btn-primary.filled:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-dark); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 8px 0; z-index: 90; }
+        .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 16px; color: var(--text-muted); cursor: pointer; transition: color 0.2s; background: none; border: none; font-family: 'Roboto', sans-serif; }
+        .bottom-nav-item:hover, .bottom-nav-item.active { color: var(--accent-blue); }
+        .bottom-nav-item i { font-size: 22px; }
+        .bottom-nav-item span { font-size: 11px; }
+
+        .reference-text { color: var(--error); font-size: 13px; padding: 8px 0; display: flex; align-items: center; gap: 6px; }
+        .reference-text i { font-size: 14px; }
+
+        .obs-table { width: 100%; margin-top: 12px; }
+        .obs-table-header { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 10px 0; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+        .obs-table-row { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; }
+        .obs-table-row:last-child { border-bottom: none; }
+
+        /* Loading spinner */
+        .loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 5; border-radius: 12px; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(90,154,184,0.3); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+
+        .api-status { font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; display: none; }
+        .api-status.success { background: rgba(76,175,80,0.15); color: var(--success); display: block; }
+        .api-status.error { background: rgba(244,67,54,0.15); color: var(--error); display: block; }
+
+        @media (max-width: 480px) {
+            .input-row { grid-template-columns: 1fr; }
+            .star-map-container { padding-bottom: 120%; } /* Taller on mobile */
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Drawer -->
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+    <div class="nav-drawer" id="navDrawer">
+        <div class="nav-header">
+            <i class="fas fa-anchor"></i>
+            <span>Nautical Calculator</span>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Navigation</div>
+            <div class="nav-item active" onclick="showPage('compass')">
+                <i class="fas fa-compass"></i>
+                <span>Compass Error</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+            <div class="nav-item" onclick="showPage('almanac')">
+                <i class="fas fa-star"></i>
+                <span>Nautical Almanac</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-moon"></i>
+                <span>Moon Phases</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-satellite"></i>
+                <span>Celestial Navigation</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Calculations</div>
+            <div class="nav-item">
+                <i class="fas fa-route"></i>
+                <span>Calculate Route</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-water"></i>
+                <span>Tides</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-wind"></i>
+                <span>Wind & Drift</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="menu-btn" onclick="toggleNav()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span class="app-title" id="pageTitle">Compass Error</span>
+        </div>
+        <div class="header-right">
+            <button class="header-icon" onclick="resetForm()" title="Reset">
+                <i class="fas fa-redo-alt"></i>
+            </button>
+            <button class="header-icon" onclick="fetchFromUSNO()" title="Fetch USNO Data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- API Status -->
+        <div class="api-status" id="apiStatus"></div>
+
+        <!-- Compass Error Page -->
+        <div id="compassPage" class="page-section active">
+            <!-- Observation Data -->
+            <div class="card animate-in">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Observation Data</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Ship Position (Lat, Lon decimal)</label>
+                        <div class="input-with-icon">
+                            <input type="text" class="form-input" id="shipPosition" value="-1.9633, 126.71" placeholder="e.g. -1.9633, 126.71">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                        </div>
+                        <div class="result-sublabel">01° 57' 48" S 126° 42' 36" E</div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label">Date (YYYY-MM-DD)</label>
+                            <input type="date" class="form-input" id="obsDate" value="2026-05-15">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">UTC Time</label>
+                            <input type="time" class="form-input" id="obsTime" value="00:30:06" step="1">
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Daylight saving time</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="dstToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Celestial Body -->
+            <div class="card animate-in" style="animation-delay: 0.1s">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Celestial Body</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Astro observed</label>
+                        <select class="form-select" id="astroSelect" onchange="onAstroChange()">
+                            <option value="Acrux">Acrux (Star #30)</option>
+                            <option value="Sun">Sun</option>
+                            <option value="Moon">Moon</option>
+                            <option value="Venus">Venus</option>
+                            <option value="Mars">Mars</option>
+                            <option value="Jupiter">Jupiter</option>
+                            <option value="Saturn">Saturn</option>
+                            <option value="Polaris">Polaris</option>
+                            <option value="Sirius">Sirius (Star #18)</option>
+                            <option value="Canopus">Canopus (Star #17)</option>
+                            <option value="Rigil Kentaurus">Rigil Kentaurus (Star #38)</option>
+                            <option value="Arcturus">Arcturus (Star #37)</option>
+                            <option value="Spica">Spica (Star #33)</option>
+                            <option value="Antares">Antares (Star #42)</option>
+                            <option value="Altair">Altair (Star #51)</option>
+                            <option value="Vega">Vega (Star #49)</option>
+                            <option value="Deneb">Deneb (Star #53)</option>
+                            <option value="Fomalhaut">Fomalhaut (Star #56)</option>
+                        </select>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label">Gyro bearing (observed)</label>
+                            <input type="number" class="form-input" id="gyroBearing" value="63.0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gyro heading</label>
+                            <input type="number" class="form-input" id="gyroHeading" value="209.0" step="0.1">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label">Compass heading</label>
+                            <input type="number" class="form-input" id="compassHeading" value="208.0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Magnetic variation</label>
+                            <input type="text" class="form-input" id="magVariation" value="0.0000° E">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculate Button -->
+            <button class="btn-primary filled" onclick="calculateCompassError()">
+                <i class="fas fa-calculator"></i> Calculate Compass Error
+            </button>
+
+            <!-- Results -->
+            <div class="card animate-in" id="resultsCard" style="display:none">
+                <div class="card-header">
+                    <h3>Results</h3>
+                </div>
+                <div class="card-body">
+                    <div class="result-row">
+                        <div><div class="result-label-main">True bearing (from almanac)</div></div>
+                        <div class="result-value accent" id="trueBearingResult">--</div>
+                    </div>
+                    <div class="result-row">
+                        <div><div class="result-label-main">Gyro error</div></div>
+                        <div class="result-value accent" id="gyroErrorResult">--</div>
+                    </div>
+                    <div class="result-row">
+                        <div><div class="result-label-main">True heading</div></div>
+                        <div class="result-value" id="trueHeadingResult">--</div>
+                    </div>
+                    <div class="result-row">
+                        <div><div class="result-label-main">Compass Error</div></div>
+                        <div class="result-value accent" id="compassErrorResult">--</div>
+                    </div>
+                    <div class="result-row">
+                        <div><div class="result-label-main">Magnetic compass deviation</div></div>
+                        <div class="result-value accent" id="deviationResult">--</div>
+                    </div>
+                    <div class="reference-text">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="variationRef">Fetch USNO data to get magnetic variation reference</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="storeBtn" style="display:none" onclick="storeDetection()">
+                <i class="fas fa-save"></i> Store Detection
+            </button>
+        </div>
+
+        <!-- Nautical Almanac Page -->
+        <div id="almanacPage" class="page-section">
+            <!-- Star Map -->
+            <div class="star-map-container animate-in" id="starMapContainer">
+                <canvas id="starMap"></canvas>
+                <div class="loading-overlay" id="starMapLoading" style="display:none">
+                    <div class="spinner"></div>
+                </div>
+                <button class="star-map-overlay" onclick="zoomStarMap()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- Observation Settings -->
+            <div class="card animate-in" style="animation-delay: 0.1s">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Observation Settings</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Observation point (Lat, Lon)</label>
+                        <div class="input-with-icon">
+                            <input type="text" class="form-input" id="almanacPosition" value="-1.9633, 126.71">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-input" id="almanacDate" value="2026-05-15">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time format</label>
+                            <select class="form-select" id="timeFormat">
+                                <option>UTC Time</option>
+                                <option>Local Time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Observation Time</label>
+                        <div class="input-with-icon">
+                            <input type="time" class="form-input" id="almanacTime" value="00:30" step="60">
+                            <i class="fas fa-redo input-icon" onclick="refreshTime()"></i>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Daylight saving time</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="almanacDst">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button class="btn-primary filled" onclick="fetchUSNOAlmanac()" id="fetchBtn">
+                        <i class="fas fa-cloud-download-alt"></i> Fetch USNO Almanac Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Altitude Filter -->
+            <div class="card animate-in" style="animation-delay: 0.15s">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Altitude Filter</h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-row">
+                        <div class="form-group">
+                            <label class="form-label">Min altitude</label>
+                            <input type="number" class="form-input" id="almanacMinAlt" value="0.0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max altitude</label>
+                            <input type="number" class="form-input" id="almanacMaxAlt" value="90.0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Astro Details -->
+            <div class="card animate-in" style="animation-delay: 0.2s">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Astro Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="result-row">
+                        <span class="result-label">GHA</span>
+                        <span class="result-value" id="ghaValue">--</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">LHA</span>
+                        <span class="result-value" id="lhaValue">--</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Polar angle</span>
+                        <span class="result-value" id="polarAngleValue">--</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Declination</span>
+                        <span class="result-value" id="declinationValue">--</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Azimuth (Zn)</span>
+                        <span class="result-value accent" id="azimuthValue">--</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Altitude (Hc)</span>
+                        <span class="result-value" id="altitudeValue">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="useAzimuthForCompass()" id="useAzimuthBtn" style="display:none">
+                <i class="fas fa-arrow-right"></i> Use Azimuth for Compass Error
+            </button>
+
+            <!-- Visible Bodies Table -->
+            <div class="card animate-in" style="animation-delay: 0.25s">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    <h3><i class="fas fa-chevron-down"></i> Visible Celestial Bodies</h3>
+                </div>
+                <div class="card-body">
+                    <div class="obs-table" id="bodiesTable">
+                        <div class="obs-table-header">
+                            <span>Body</span>
+                            <span>Hc</span>
+                            <span>Az (Zn)</span>
+                        </div>
+                        <div class="obs-table-row">
+                            <span colspan="3" style="color: var(--text-muted); text-align: center;">Fetch USNO data to populate</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-item active" onclick="showPage('compass')">
+            <i class="fas fa-compass"></i>
+            <span>Compass</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showPage('almanac')">
+            <i class="fas fa-star"></i>
+            <span>Almanac</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showHistory()">
+            <i class="fas fa-history"></i>
+            <span>History</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showSettings()">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <script>
+        // ==================== GLOBAL STATE ====================
+        let currentUSNOData = null;
+        let selectedBodyData = null;
+        let starMapResizeObserver = null;
+
+        // 57 Navigational Stars with approximate J2000 positions (SHA, Dec)
+        // These are used for the star chart visualization
+        const NAV_STARS = [
+            {name: "Alpheratz", num: 1, sha: 358, dec: 29, mag: 2.06},
+            {name: "Ankaa", num: 2, sha: 354, dec: -42, mag: 2.37},
+            {name: "Schedar", num: 3, sha: 350, dec: 56, mag: 2.25},
+            {name: "Diphda", num: 4, sha: 349, dec: -18, mag: 2.04},
+            {name: "Achernar", num: 5, sha: 336, dec: -57, mag: 0.50},
+            {name: "Hamal", num: 6, sha: 328, dec: 23, mag: 2.00},
+            {name: "Acamar", num: 7, sha: 316, dec: -40, mag: 3.2},
+            {name: "Menkar", num: 8, sha: 315, dec: 4, mag: 2.5},
+            {name: "Mirfak", num: 9, sha: 309, dec: 50, mag: 1.82},
+            {name: "Aldebaran", num: 10, sha: 291, dec: 16, mag: 0.85},
+            {name: "Rigel", num: 11, sha: 282, dec: -8, mag: 0.12},
+            {name: "Capella", num: 12, sha: 281, dec: 46, mag: 0.71},
+            {name: "Bellatrix", num: 13, sha: 279, dec: 6, mag: 1.64},
+            {name: "Elnath", num: 14, sha: 279, dec: 29, mag: 1.68},
+            {name: "Alnilam", num: 15, sha: 276, dec: -1, mag: 1.70},
+            {name: "Betelgeuse", num: 16, sha: 271, dec: 7, mag: 0.58},
+            {name: "Canopus", num: 17, sha: 264, dec: -53, mag: -0.72},
+            {name: "Sirius", num: 18, sha: 259, dec: -17, mag: -1.47},
+            {name: "Adhara", num: 19, sha: 256, dec: -29, mag: 1.51},
+            {name: "Procyon", num: 20, sha: 245, dec: 5, mag: 0.34},
+            {name: "Pollux", num: 21, sha: 244, dec: 28, mag: 1.15},
+            {name: "Avior", num: 22, sha: 234, dec: -59, mag: 2.4},
+            {name: "Suhail", num: 23, sha: 223, dec: -43, mag: 2.23},
+            {name: "Miaplacidus", num: 24, sha: 222, dec: -70, mag: 1.70},
+            {name: "Alphard", num: 25, sha: 218, dec: -9, mag: 2.00},
+            {name: "Regulus", num: 26, sha: 208, dec: 12, mag: 1.35},
+            {name: "Dubhe", num: 27, sha: 194, dec: 62, mag: 1.87},
+            {name: "Denebola", num: 28, sha: 183, dec: 15, mag: 2.14},
+            {name: "Gienah", num: 29, sha: 176, dec: -17, mag: 2.80},
+            {name: "Acrux", num: 30, sha: 174, dec: -63, mag: 1.40},
+            {name: "Gacrux", num: 31, sha: 172, dec: -57, mag: 1.63},
+            {name: "Alioth", num: 32, sha: 167, dec: 56, mag: 1.76},
+            {name: "Spica", num: 33, sha: 159, dec: -11, mag: 1.04},
+            {name: "Alkaid", num: 34, sha: 153, dec: 49, mag: 1.85},
+            {name: "Hadar", num: 35, sha: 149, dec: -60, mag: 0.60},
+            {name: "Menkent", num: 36, sha: 149, dec: -36, mag: 2.06},
+            {name: "Arcturus", num: 37, sha: 146, dec: 19, mag: -0.04},
+            {name: "Rigil Kentaurus", num: 38, sha: 140, dec: -61, mag: -0.01},
+            {name: "Zubenelgenubi", num: 39, sha: 138, dec: -16, mag: 3.28},
+            {name: "Kochab", num: 40, sha: 137, dec: 74, mag: 2.08},
+            {name: "Alphecca", num: 41, sha: 127, dec: 27, mag: 2.24},
+            {name: "Antares", num: 42, sha: 113, dec: -26, mag: 1.09},
+            {name: "Atria", num: 43, sha: 108, dec: -69, mag: 1.92},
+            {name: "Sabik", num: 44, sha: 103, dec: -16, mag: 2.43},
+            {name: "Shaula", num: 45, sha: 97, dec: -37, mag: 1.62},
+            {name: "Rasalhague", num: 46, sha: 96, dec: 13, mag: 2.10},
+            {name: "Eltanin", num: 47, sha: 91, dec: 51, mag: 2.23},
+            {name: "Kaus Australis", num: 48, sha: 84, dec: -34, mag: 1.80},
+            {name: "Vega", num: 49, sha: 81, dec: 39, mag: 0.03},
+            {name: "Nunki", num: 50, sha: 76, dec: -26, mag: 2.06},
+            {name: "Altair", num: 51, sha: 63, dec: 9, mag: 0.77},
+            {name: "Peacock", num: 52, sha: 54, dec: -57, mag: 1.91},
+            {name: "Deneb", num: 53, sha: 50, dec: 45, mag: 1.25},
+            {name: "Enif", num: 54, sha: 34, dec: 10, mag: 2.40},
+            {name: "Al Na'ir", num: 55, sha: 28, dec: -47, mag: 1.74},
+            {name: "Fomalhaut", num: 56, sha: 16, dec: -30, mag: 1.16},
+            {name: "Markab", num: 57, sha: 14, dec: 15, mag: 2.49},
+            {name: "Polaris", num: 99, sha: 319, dec: 89, mag: 2.01}
+        ];
+
+        // Planets with approximate colors
+        const PLANETS = {
+            "Sun": {color: "#ffd700", size: 18, glow: 25},
+            "Moon": {color: "#e0e0e0", size: 12, glow: 18},
+            "Venus": {color: "#ffffcc", size: 8, glow: 14},
+            "Mars": {color: "#ff6b6b", size: 7, glow: 12},
+            "Jupiter": {color: "#d4a574", size: 10, glow: 16},
+            "Saturn": {color: "#c4b896", size: 9, glow: 14},
+            "Mercury": {color: "#a0a0a0", size: 5, glow: 10}
+        };
+
+        // ==================== NAVIGATION ====================
+        function toggleNav() {
+            document.getElementById('navDrawer').classList.toggle('open');
+            document.getElementById('navOverlay').classList.toggle('open');
+        }
+
+        function showPage(page) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+            
+            if (page === 'compass') {
+                document.getElementById('compassPage').classList.add('active');
+                document.getElementById('pageTitle').textContent = 'Compass Error';
+                document.querySelectorAll('.bottom-nav-item')[0].classList.add('active');
+            } else if (page === 'almanac') {
+                document.getElementById('almanacPage').classList.add('active');
+                document.getElementById('pageTitle').textContent = 'Nautical Almanac';
+                document.querySelectorAll('.bottom-nav-item')[1].classList.add('active');
+                requestAnimationFrame(() => drawStarMap());
+            }
+            toggleNav();
+            window.scrollTo(0, 0);
+        }
+
+        function toggleCard(header) {
+            header.classList.toggle('collapsed');
+            const body = header.nextElementSibling;
+            body.classList.toggle('collapsed');
+        }
+
+        // ==================== RESPONSIVE STAR MAP ====================
+        function setupStarMap() {
+            const canvas = document.getElementById('starMap');
+            if (!canvas) return;
+
+            // Use ResizeObserver for proper responsive behavior
+            if (starMapResizeObserver) {
+                starMapResizeObserver.disconnect();
+            }
+
+            const container = document.getElementById('starMapContainer');
+            starMapResizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    drawStarMap();
+                }
+            });
+            starMapResizeObserver.observe(container);
+        }
+
+        function drawStarMap() {
+            const canvas = document.getElementById('starMap');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('starMapContainer');
+            const rect = container.getBoundingClientRect();
+            
+            // Handle DPI scaling for crisp rendering on Retina displays
+            const dpr = window.devicePixelRatio || 1;
+            const displayWidth = rect.width;
+            const displayHeight = rect.height;
+            
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+            ctx.scale(dpr, dpr);
+
+            const cx = displayWidth / 2;
+            const cy = displayHeight / 2;
+            const radius = Math.min(cx, cy) - 25;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, 0, displayHeight);
+            gradient.addColorStop(0, '#0a1a2e');
+            gradient.addColorStop(0.5, '#1a3a5c');
+            gradient.addColorStop(1, '#0d2137');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, displayWidth, displayHeight);
+
+            // Horizon circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Cardinal directions
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = 'bold 16px Roboto';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('N', cx, cy - radius - 12);
+            ctx.fillText('S', cx, cy + radius + 12);
+            ctx.fillText('W', cx - radius - 12, cy);
+            ctx.fillText('E', cx + radius + 12, cy);
+
+            // Crosshairs
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - radius + 5);
+            ctx.lineTo(cx, cy + radius - 5);
+            ctx.moveTo(cx - radius + 5, cy);
+            ctx.lineTo(cx + radius - 5, cy);
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw navigational stars
+            NAV_STARS.forEach(star => {
+                // Convert SHA/Dec to x,y on the chart
+                // SHA is measured westward from vernal equinox (0 at left, increasing CCW)
+                // For the chart: 0° SHA at left (W), 180° at right (E)
+                const angle = ((star.sha + 90) % 360) * Math.PI / 180;
+                const r = (90 - star.dec) / 180 * radius;
+                
+                const sx = cx + Math.cos(angle) * r;
+                const sy = cy + Math.sin(angle) * r;
+
+                // Only draw if within circle
+                const distFromCenter = Math.sqrt((sx-cx)**2 + (sy-cy)**2);
+                if (distFromCenter > radius) return;
+
+                const size = Math.max(2, 5 - star.mag * 0.8);
+                
+                // Glow
+                ctx.beginPath();
+                ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${0.15 - star.mag * 0.02})`;
+                ctx.fill();
+
+                // Star
+                ctx.beginPath();
+                ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fill();
+
+                // Label bright stars
+                if (star.mag < 1.5) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.font = '11px Roboto';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(star.name, sx + size + 3, sy + 3);
+                }
+            });
+
+            // Draw planets from current USNO data if available
+            if (currentUSNOData && currentUSNOData.properties && currentUSNOData.properties.data) {
+                currentUSNOData.properties.data.forEach(body => {
+                    const name = body.object;
+                    if (!PLANETS[name]) return;
+                    
+                    const ad = body.almanac_data;
+                    if (!ad) return;
+
+                    // Convert Zn (azimuth) and Hc (altitude) to chart position
+                    // Zn: 0° = N, 90° = E, 180° = S, 270° = W
+                    // Chart: 0° at top (N), clockwise
+                    const znRad = (ad.zn - 90) * Math.PI / 180; // Adjust for canvas coordinates
+                    const altFactor = (90 - Math.abs(ad.hc)) / 90;
+                    const pr = altFactor * radius;
+
+                    const px = cx + Math.cos(znRad) * pr;
+                    const py = cy + Math.sin(znRad) * pr;
+
+                    const planet = PLANETS[name];
+                    
+                    // Glow
+                    ctx.beginPath();
+                    ctx.arc(px, py, planet.glow, 0, Math.PI * 2);
+                    ctx.fillStyle = planet.color + '33'; // 20% opacity
+                    ctx.fill();
+
+                    // Body
+                    ctx.beginPath();
+                    ctx.arc(px, py, planet.size, 0, Math.PI * 2);
+                    ctx.fillStyle = planet.color;
+                    ctx.fill();
+
+                    // Label
+                    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                    ctx.font = 'bold 12px Roboto';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(name, px, py + planet.size + 14);
+
+                    // Highlight selected body
+                    const selected = document.getElementById('astroSelect').value;
+                    if (name === selected) {
+                        ctx.beginPath();
+                        ctx.arc(px, py, planet.size + 6, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ff88';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            // Saturn ring (special case)
+            if (currentUSNOData) {
+                const saturn = currentUSNOData.properties.data.find(b => b.object === 'Saturn');
+                if (saturn && saturn.almanac_data) {
+                    const ad = saturn.almanac_data;
+                    const znRad = (ad.zn - 90) * Math.PI / 180;
+                    const altFactor = (90 - Math.abs(ad.hc)) / 90;
+                    const pr = altFactor * radius;
+                    const px = cx + Math.cos(znRad) * pr;
+                    const py = cy + Math.sin(znRad) * pr;
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 14, 5, znRad, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(196,184,150,0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function zoomStarMap() {
+            const canvas = document.getElementById('starMap');
+            const link = document.createElement('a');
+            link.download = 'star-chart.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // ==================== USNO API INTEGRATION ====================
+        function parseCoords(input) {
+            // Parse "lat, lon" decimal format
+            const parts = input.split(',').map(p => parseFloat(p.trim()));
+            if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                return { lat: parts[0], lon: parts[1] };
+            }
+            return null;
+        }
+
+        function formatDMS(decimal, isLat) {
+            const abs = Math.abs(decimal);
+            const d = Math.floor(abs);
+            const m = Math.floor((abs - d) * 60);
+            const s = ((abs - d) * 60 - m) * 60;
+            const dir = isLat ? (decimal >= 0 ? 'N' : 'S') : (decimal >= 0 ? 'E' : 'W');
+            return `${d}° ${m}' ${s.toFixed(1)}" ${dir}`;
+        }
+
+        function formatAngle(deg, showDir = false) {
+            const d = Math.floor(Math.abs(deg));
+            const m = (Math.abs(deg) - d) * 60;
+            const dir = deg >= 0 ? (showDir ? 'E' : '') : (showDir ? 'W' : '');
+            return `${d}° ${m.toFixed(1)}' ${dir}`.trim();
+        }
+
+        async function fetchUSNOAlmanac() {
+            const coords = parseCoords(document.getElementById('almanacPosition').value);
+            const date = document.getElementById('almanacDate').value;
+            const time = document.getElementById('almanacTime').value;
+            
+            if (!coords) {
+                showStatus('Invalid coordinates. Use format: lat, lon (e.g. -1.9633, 126.71)', 'error');
+                return;
+            }
+            if (!date || !time) {
+                showStatus('Please enter date and time', 'error');
+                return;
+            }
+
+            const fetchBtn = document.getElementById('fetchBtn');
+            fetchBtn.disabled = true;
+            fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+            document.getElementById('starMapLoading').style.display = 'flex';
+
+            try {
+                // USNO API endpoint for celestial navigation data
+                const url = `https://aa.usno.navy.mil/api/celnav?date=${date}&time=${time}&coords=${coords.lat},${coords.lon}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                currentUSNOData = data;
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Process and display data
+                processUSNOData(data, coords.lon);
+                showStatus('USNO data fetched successfully', 'success');
+                
+                // Redraw star map with new data
+                drawStarMap();
+                
+                // Show use azimuth button
+                document.getElementById('useAzimuthBtn').style.display = 'block';
+
+            } catch (err) {
+                console.error('USNO API Error:', err);
+                showStatus('Failed to fetch USNO data. Using demo values. Error: ' + err.message, 'error');
+                // Fallback to demo data
+                useDemoData(coords.lon);
+            } finally {
+                fetchBtn.disabled = false;
+                fetchBtn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> Fetch USNO Almanac Data';
+                document.getElementById('starMapLoading').style.display = 'none';
+            }
+        }
+
+        function processUSNOData(data, observerLon) {
+            const properties = data.properties;
+            const bodies = properties.data;
+            
+            // Find selected body
+            const selectedName = document.getElementById('astroSelect').value;
+            selectedBodyData = bodies.find(b => b.object === selectedName);
+            
+            if (!selectedBodyData) {
+                // If selected body not in data, use first available
+                selectedBodyData = bodies[0];
+            }
+
+            const ad = selectedBodyData.almanac_data;
+            
+            // Calculate LHA from GHA and observer longitude
+            // LHA = GHA + East longitude (or GHA - West longitude)
+            let lha = ad.gha + observerLon;
+            while (lha >= 360) lha -= 360;
+            while (lha < 0) lha += 360;
+            
+            // Polar angle = LHA if LHA < 180, else 360 - LHA
+            const polarAngle = lha <= 180 ? lha : 360 - lha;
+            const polarDir = lha <= 180 ? 'W' : 'E';
+
+            // Update UI fields
+            document.getElementById('ghaValue').textContent = formatAngle(ad.gha);
+            document.getElementById('lhaValue').textContent = formatAngle(lha);
+            document.getElementById('polarAngleValue').textContent = formatAngle(polarAngle) + ' ' + polarDir;
+            document.getElementById('declinationValue').textContent = formatAngle(ad.dec, true);
+            document.getElementById('azimuthValue').textContent = ad.zn.toFixed(1) + '°';
+            document.getElementById('altitudeValue').textContent = ad.hc.toFixed(1) + '°';
+
+            // Update visible bodies table
+            const table = document.getElementById('bodiesTable');
+            let html = `
+                <div class="obs-table-header">
+                    <span>Body</span>
+                    <span>Hc</span>
+                    <span>Az (Zn)</span>
+                </div>
+            `;
+            
+            bodies.forEach(body => {
+                const bd = body.almanac_data;
+                const isSelected = body.object === selectedName;
+                const style = isSelected ? 'color: var(--accent-blue); font-weight: 500;' : '';
+                html += `
+                    <div class="obs-table-row" style="${style}" onclick="selectBody('${body.object}')">
+                        <span>${body.object}</span>
+                        <span>${bd.hc.toFixed(1)}°</span>
+                        <span>${bd.zn.toFixed(1)}°</span>
+                    </div>
+                `;
+            });
+            table.innerHTML = html;
+        }
+
+        function useDemoData(observerLon) {
+            // Demo data matching your screenshot for Acrux
+            const demoData = {
+                properties: {
+                    data: [{
+                        object: "Acrux",
+                        nav_star_number: 30,
+                        almanac_data: {
+                            gha: 53.25,
+                            dec: -63.25,
+                            hc: -24.79,
+                            zn: 180.0
+                        }
+                    }]
+                }
+            };
+            currentUSNOData = demoData;
+            processUSNOData(demoData, observerLon || 126.71);
+            drawStarMap();
+        }
+
+        function selectBody(name) {
+            document.getElementById('astroSelect').value = name;
+            if (currentUSNOData) {
+                const coords = parseCoords(document.getElementById('almanacPosition').value);
+                processUSNOData(currentUSNOData, coords ? coords.lon : 126.71);
+            }
+            drawStarMap();
+        }
+
+        function onAstroChange() {
+            if (currentUSNOData) {
+                const coords = parseCoords(document.getElementById('almanacPosition').value);
+                processUSNOData(currentUSNOData, coords ? coords.lon : 126.71);
+                drawStarMap();
+            }
+        }
+
+        function useAzimuthForCompass() {
+            if (!selectedBodyData) return;
+            const zn = selectedBodyData.almanac_data.zn;
+            
+            // Switch to compass page
+            showPage('compass');
+            
+            // Set the true bearing from calculated azimuth
+            document.getElementById('trueBearingResult').textContent = zn.toFixed(1) + '°';
+            
+            // Auto-calculate compass error with this true bearing
+            calculateCompassError(zn);
+        }
+
+        // ==================== COMPASS ERROR CALCULATIONS ====================
+        function calculateCompassError(forcedTrueBearing) {
+            const gyroBearing = parseFloat(document.getElementById('gyroBearing').value) || 0;
+            const gyroHeading = parseFloat(document.getElementById('gyroHeading').value) || 0;
+            const compassHeading = parseFloat(document.getElementById('compassHeading').value) || 0;
+            const magVariation = parseFloat(document.getElementById('magVariation').value) || 0;
+
+            // Use API true bearing if available, otherwise use forced or default
+            let trueBearing = forcedTrueBearing;
+            if (trueBearing === undefined) {
+                const tbText = document.getElementById('trueBearingResult').textContent;
+                trueBearing = parseFloat(tbText) || 180.0;
+            }
+
+            // Gyro error = True bearing - Gyro bearing
+            let gyroError = trueBearing - gyroBearing;
+            if (gyroError < 0) gyroError += 360;
+            if (gyroError >= 360) gyroError -= 360;
+            const gyroErrorDir = gyroError > 180 ? 'W' : 'E';
+            const gyroErrorDisp = gyroError > 180 ? 360 - gyroError : gyroError;
+
+            // True heading = Gyro heading + Gyro error
+            let trueHeading = gyroHeading + gyroError;
+            if (trueHeading >= 360) trueHeading -= 360;
+
+            // Compass error = True heading - Compass heading
+            let compassError = trueHeading - compassHeading;
+            if (compassError < 0) compassError += 360;
+            if (compassError >= 360) compassError -= 360;
+            const compassErrorDir = compassError > 180 ? 'W' : 'E';
+            const compassErrorDisp = compassError > 180 ? 360 - compassError : compassError;
+
+            // Magnetic compass deviation = Compass error - Variation
+            let deviation = compassErrorDisp - Math.abs(magVariation);
+            const deviationDir = deviation >= 0 ? compassErrorDir : (compassErrorDir === 'E' ? 'W' : 'E');
+            deviation = Math.abs(deviation);
+
+            // Update results
+            document.getElementById('trueBearingResult').textContent = trueBearing.toFixed(1) + '°';
+            document.getElementById('gyroErrorResult').innerHTML = gyroErrorDisp.toFixed(1) + '° <span class="direction-badge">' + gyroErrorDisp.toFixed(0) + ' ' + gyroErrorDir + '</span>';
+            document.getElementById('trueHeadingResult').textContent = trueHeading.toFixed(1) + '°';
+            document.getElementById('compassErrorResult').innerHTML = compassErrorDisp.toFixed(1) + '° <span class="direction-badge">' + compassErrorDisp.toFixed(0) + ' ' + compassErrorDir + '</span>';
+            document.getElementById('deviationResult').innerHTML = deviation.toFixed(1) + '° <span class="direction-badge">' + deviation.toFixed(0) + ' ' + deviationDir + '</span>';
+
+            document.getElementById('resultsCard').style.display = 'block';
+            document.getElementById('storeBtn').style.display = 'block';
+            document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function showStatus(msg, type) {
+            const el = document.getElementById('apiStatus');
+            el.textContent = msg;
+            el.className = 'api-status ' + type;
+            setTimeout(() => { el.className = 'api-status'; }, 5000);
+        }
+
+        function fetchFromUSNO() {
+            showPage('almanac');
+            setTimeout(() => fetchUSNOAlmanac(), 300);
+        }
+
+        function storeDetection() {
+            const btn = document.getElementById('storeBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Stored!';
+            btn.style.background = 'var(--success)';
+            btn.style.borderColor = 'var(--success)';
+            btn.style.color = 'white';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }, 2000);
+        }
+
+        function resetForm() {
+            document.getElementById('shipPosition').value = '-1.9633, 126.71';
+            document.getElementById('obsDate').value = '2026-05-15';
+            document.getElementById('obsTime').value = '00:30:06';
+            document.getElementById('gyroBearing').value = '63.0';
+            document.getElementById('gyroHeading').value = '209.0';
+            document.getElementById('compassHeading').value = '208.0';
+            document.getElementById('magVariation').value = '0.0000° E';
+            document.getElementById('resultsCard').style.display = 'none';
+            document.getElementById('storeBtn').style.display = 'none';
+            document.getElementById('trueBearingResult').textContent = '--';
+        }
+
+        function refreshTime() {
+            const now = new Date();
+            const utc = now.toISOString().substr(11, 5);
+            document.getElementById('almanacTime').value = utc;
+        }
+
+        function showHistory() {
+            alert('History feature - Shows stored compass error detections');
+        }
+
+        function showSettings() {
+            alert('Settings feature - Configure units, display preferences, etc.');
+        }
+
+        // ==================== INITIALIZATION ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            setupStarMap();
+            
+            // Set today's date as default if not set
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            
+            if (!document.getElementById('obsDate').value) {
+                document.getElementById('obsDate').value = dateStr;
+            }
+            if (!document.getElementById('almanacDate').value) {
+                document.getElementById('almanacDate').value = dateStr;
+            }
+
+            // Initial draw
+            requestAnimationFrame(() => drawStarMap());
+        });
+
+        // Handle visibility change (redraw when tab becomes active)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && document.getElementById('almanacPage').classList.contains('active')) {
+                requestAnimationFrame(() => drawStarMap());
+            }
+        });
+    </script>
+</body>
+</html>
